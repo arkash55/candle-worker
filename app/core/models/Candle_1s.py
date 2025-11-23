@@ -5,7 +5,7 @@ class Candle_1s():
     
     @classmethod
     def from_trades(cls, symbol, trades):
-        pass
+        return True
 
     @classmethod
     def start_new(cls, symbol, timestamp):
@@ -13,4 +13,4 @@ class Candle_1s():
         pass
 
     def update(self, trade):
-        pass
+        pass 

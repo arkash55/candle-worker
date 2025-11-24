@@ -5,13 +5,18 @@ class Candle_1s():
 
     
 
-    def __init__(self, open, close, high, low):
+    def __init__(self, symbol, open, close, high, low):
+        self.__symbol = symbol
         self.__open = open
         self.__close = close
         self.__high = high
         self.__low = low
 
     # PROPERTIES
+    @property
+    def symbol(self):
+        return self.__symbol
+
     @property
     def open(self):
         return self.__open
@@ -31,16 +36,17 @@ class Candle_1s():
     
 
     #static methods
-    def get_ohlc(trades):
+    @staticmethod
+    def _get_ohlc(trades):
         if len(trades) == 0:
-            return None
+            raise ValueError("Cannot build candle from empty trade list")
         
         sorted_trades = sorted(trades, key=lambda t: t.timestamp)
-        open, close = sorted_trades[0].price, sorted_trades[-1].price
-        high = max(t.price for t in sorted_trades)
-        low = min(t.price for t in sorted_trades)
+        open_, close_ = sorted_trades[0].price, sorted_trades[-1].price
+        high_ = max(t.price for t in sorted_trades)
+        low_ = min(t.price for t in sorted_trades)
 
-        return open, high, low, close
+        return (open_, high_, low_, close_)
         
 
         
@@ -51,8 +57,8 @@ class Candle_1s():
     @classmethod
     def from_trades(cls, symbol, trades):
         # we need to get open, close, high low
-        open, high, low, close = cls.get_ohlc(trades)
-        candle = Candle_1s(open=open, close=close, high=high, low=low)
+        open_, high_, low_, close_ = cls._get_ohlc(trades)
+        candle = cls(symbol=symbol, open=open_, close=close_, high=high_, low=low_)
         return candle
 
 

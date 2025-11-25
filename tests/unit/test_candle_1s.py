@@ -1,5 +1,5 @@
 import unittest
-from random import randint
+from random import randint, random
 from datetime import datetime, timedelta
 from app.core.models import Candle_1s, Trade
 
@@ -36,6 +36,37 @@ class Test_Candle_1s(unittest.TestCase):
         return trades;
 
 
+
+    def assert_candle_equal(self, candle, open, high, low, close, trade_cnt, volume, vwap, timestamp, is_finalised, almost_equal_vwap):
+        self.assertEqual(candle.open, open)
+        self.assertEqual(candle.high, high)
+        self.assertEqual(candle.low, low)
+        self.assertEqual(candle.close, close)
+
+        self.assertEqual(candle.trade_cnt, trade_cnt)
+        self.assertEqual(candle.volume, volume)
+        self.assertEqual(candle.vwap, vwap)
+
+        self.assertEqual(candle.timestamp, timestamp)
+        
+
+        assert_finalised_fn = self.assertTrue if is_finalised else self.assertFalse
+        assert_finalised_fn(candle.finalised)
+
+        assert_vwap_fn = self.assertAlmostEqual if almost_equal_vwap else self.assertEqual
+        assert_vwap_fn(candle.vwap, vwap)
+
+
+
+        if almost_equal_vwap:
+            self.assertAlmostEqual(candle.vwap, vwap)
+        else :
+            self.assertEqual(candle.vwap, vwap)
+
+
+
+
+
         
 
     def test_valid_from_trades(self):
@@ -44,15 +75,24 @@ class Test_Candle_1s(unittest.TestCase):
         candle = Candle_1s.from_trades(symbol=self.symbol, trades=trades)
         vwap_numerator = sum(t.price * t.size for t in trades)
         volume = sum(t.size for t in trades)
-        self.assertEqual(candle.open, open_)
-        self.assertEqual(candle.close, close_)
-        self.assertEqual(candle.low, low_)
-        self.assertEqual(candle.high, high_)
-        self.assertEqual(candle.timestamp, trades[0].timestamp.replace(microsecond=0))
-        self.assertTrue(candle.finalised)
-        self.assertEqual(candle.trade_cnt, len(trades))
-        self.assertEqual(candle.volume, volume)
-        self.assertEqual(candle.vwap, vwap_numerator/volume)
+
+        self.assert_candle_equal(
+            candle=candle,
+            open=open_,
+            high=high_, 
+            low=low_,
+            close=close_,
+            trade_cnt=len(trades),
+            volume=volume,
+            vwap=vwap_numerator/volume,
+            timestamp=trades[0].timestamp.replace(microsecond=0),
+            is_finalised=True,
+            almost_equal_vwap=False
+        )
+
+    
+
+
 
 
     def test_empty_from_trades(self):
@@ -67,15 +107,23 @@ class Test_Candle_1s(unittest.TestCase):
         price, size = 50, 10
         trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
         candle = Candle_1s.start_new(trade=trade)
-        self.assertEqual(candle.open, price)
-        self.assertEqual(candle.close, price)
-        self.assertEqual(candle.low, price)
-        self.assertEqual(candle.high, price)
-        self.assertEqual(candle.timestamp, timestamp.replace(microsecond=0))
-        self.assertEqual(candle.trade_cnt, 1)
-        self.assertEqual(candle.volume, size)
-        self.assertEqual(candle.vwap, price)
-        self.assertFalse(candle.finalised)
+
+        self.assert_candle_equal(
+            candle=candle,
+            open=price,
+            high=price, 
+            low=price,
+            close=price,
+            trade_cnt=1,
+            volume=size,
+            vwap=price,
+            timestamp=timestamp.replace(microsecond=0),
+            is_finalised=False,
+            almost_equal_vwap=False
+        )
+
+
+  
 
 
     def test_update(self):
@@ -89,15 +137,71 @@ class Test_Candle_1s(unittest.TestCase):
         latest_vwap_numerator = last_trade.price * last_trade.size + latest_trade.price * latest_trade.size
         latest_vwap_denominator = last_trade.size + latest_trade.size
 
-        self.assertEqual(candle.open, last_trade.price)
-        self.assertEqual(candle.close, latest_trade.price)
-        self.assertEqual(candle.low, last_trade.price)
-        self.assertEqual(candle.high, latest_trade.price)
-        self.assertEqual(candle.timestamp, last_trade.timestamp)
-        self.assertEqual(candle.trade_cnt, 2)
-        self.assertEqual(candle.volume, last_trade.size + latest_trade.size)
-        self.assertEqual(candle.vwap, latest_vwap_numerator/latest_vwap_denominator)
-        self.assertFalse(candle.finalised)
+
+        self.assert_candle_equal(
+            candle=candle,
+            open=last_trade.price,
+            high=latest_trade.price, 
+            low=last_trade.price,
+            close=latest_trade.price,
+            trade_cnt=2,
+            volume=last_trade.size + latest_trade.size,
+            vwap=latest_vwap_numerator/latest_vwap_denominator,
+            timestamp=last_trade.timestamp,
+            is_finalised=False,
+            almost_equal_vwap=False
+        )
+
+        
+
+
+
+    # required for testing vwap (numerator -> vwap), volume, trade_cnt accumulation
+    def test_multiple_updates(self):
+        aligned_timestamp = datetime.now().replace(microsecond=0)
+        trade_cnt = 10
+        prices = [random()*100 for _ in range(trade_cnt)]
+        sizes = [randint(1, 150) for _ in range(trade_cnt)]
+        trades = [
+                    Trade(self.symbol, price=prices[i], size=sizes[i], timestamp=aligned_timestamp+timedelta(microseconds=i)) 
+                    for i in range(trade_cnt)
+                ]
+        candle = Candle_1s.start_new(trades[0])
+        
+        for i in range(1, trade_cnt):
+            candle.update(trades[i])
+
+
+
+        pred_open = trades[0].price
+        pred_high = max(prices)
+        pred_low = min(prices)
+        pred_close = trades[-1].price
+
+        pred_vwap_numerator = sum(prices[i] * sizes[i] for i in range(trade_cnt))
+        pred_vwap_denominator = sum(sizes)
+        pred_volume = pred_vwap_denominator
+
+        pred_timestamp = trades[0].timestamp.replace(microsecond=0)
+
+
+        self.assert_candle_equal(
+            candle=candle,
+            open=pred_open,
+            high=pred_high, 
+            low=pred_low,
+            close=pred_close,
+            trade_cnt=trade_cnt,
+            volume=pred_volume,
+            vwap=pred_vwap_numerator/pred_vwap_denominator,
+            timestamp=pred_timestamp,
+            is_finalised=False,
+            almost_equal_vwap=True
+        )
+
+        
+
+
 
 
     def test_failed_update_on_finalised_candle(self):
@@ -113,7 +217,20 @@ class Test_Candle_1s(unittest.TestCase):
 
 
 
-    def test_failed_update_on_out_of_window_candle(self):
+    def test_failed_trade_before_candle_window(self):
+
+        timestamp = datetime.now().replace(microsecond=0)
+        price, size = 50, 10
+        last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp-timedelta(seconds=2))
+
+        with self.assertRaises(RuntimeError):
+            candle.update(latest_trade)
+
+
+
+    def test_failed_update_trade_after_candle_window(self):
 
         timestamp = datetime.now().replace(microsecond=0)
         price, size = 50, 10
@@ -123,3 +240,18 @@ class Test_Candle_1s(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             candle.update(latest_trade)
+
+
+    def test_failed_update_trade_on_candle_window_close(self):
+
+        timestamp = datetime.now().replace(microsecond=0)
+        price, size = 50, 10
+        last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(seconds=1))
+
+        with self.assertRaises(RuntimeError):
+            candle.update(latest_trade)
+
+
+    # create more tests, mulitple updates, all window postions

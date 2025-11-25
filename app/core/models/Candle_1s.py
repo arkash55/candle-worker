@@ -64,8 +64,14 @@ class Candle_1s():
     def finalised(self):
         return self.__finalised
     
+    @property
+    def end_timestamp(self):
+        return self.__timestamp + timedelta(seconds=1)
+    
 
     #STATIC METHODS
+
+
     @staticmethod
     def _get_ohlc(trades):
         if len(trades) == 0:
@@ -95,9 +101,12 @@ class Candle_1s():
         
 
     # METHODS
+
+
+    # HUGE ASSUMPTION, ensure all trades are valid, they are of same symbol,and exist in the same candle window!!!! Care when creating this functionality upstream
+
     @classmethod
     def from_trades(cls, symbol, trades):
-        # we need to get open, close, high low
         open_, high_, low_, close_ = cls._get_ohlc(trades)
         volume_ = cls._get_volume(trades)
         trade_cnt_ = cls._get_trade_cnt(trades)
@@ -130,7 +139,7 @@ class Candle_1s():
     def update(self, trade):
         if self.finalised:
             raise RuntimeError('Cannot update a finalised candle')
-        if not self.timestamp <= trade.timestamp < self.timestamp + timedelta(seconds=1):
+        if not self.timestamp <= trade.timestamp < self.end_timestamp:
             raise RuntimeError('Trade timestamp exists outside candles time window')
 
 

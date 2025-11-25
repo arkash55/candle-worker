@@ -1,4 +1,4 @@
-
+from datetime import timedelta
 
 
 class Candle_1s():
@@ -16,6 +16,8 @@ class Candle_1s():
         self.__vwap = vwap
         self.__timestamp = timestamp
         self.__finalised = finalised
+        self.__vwap_numerator = vwap * volume
+
 
     # PROPERTIES
     @property
@@ -39,8 +41,6 @@ class Candle_1s():
     def low(self):
         return self.__low
     
-
-
 
     @property
     def trade_cnt(self):
@@ -112,10 +112,6 @@ class Candle_1s():
 
 
 
-
-
-
-
     @classmethod
     def start_new(cls, trade):
         open_ = high_ = low_ = close_ = trade.price
@@ -130,5 +126,21 @@ class Candle_1s():
         return candle
 
 
-    # def update(self, trade):
-    #     pass 
+
+    def update(self, trade):
+        if self.finalised:
+            raise RuntimeError('Cannot update a finalised candle')
+        if not self.timestamp <= trade.timestamp < self.timestamp + timedelta(seconds=1):
+            raise RuntimeError('Trade timestamp exists outside candles time window')
+
+
+        self.__close = trade.price
+        self.__volume += trade.size
+        self.__high = max(self.__high, trade.price)
+        self.__low = min(self.__low, trade.price)
+        self.__vwap_numerator += trade.price * trade.size
+        self.__vwap = self.__vwap_numerator/self.__volume
+        self.__trade_cnt += 1
+
+    def finalise(self):
+        self.__finalised = True

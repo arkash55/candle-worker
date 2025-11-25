@@ -16,7 +16,7 @@ class Test_Candle_1s(unittest.TestCase):
 
     def generate_from_trades_data(self, open_, high_, low_, close_, size_):
         trades = []
-        curr_time = datetime.now()
+        curr_time = datetime.now().replace(microsecond=0)
         trades.append(Trade(
                 symbol=self.symbol, price=high_,
                 size=size_, timestamp=curr_time + timedelta(milliseconds=20),
@@ -78,7 +78,48 @@ class Test_Candle_1s(unittest.TestCase):
         self.assertFalse(candle.finalised)
 
 
+    def test_update(self):
+        last_price, last_size, last_timestamp = 50, 10, datetime.now().replace(microsecond=0)
+        latest_price, latest_size, latest_timestamp = 55, 20, last_timestamp+timedelta(milliseconds=20) 
+        last_trade = Trade(symbol=self.symbol, price=last_price, size=last_size, 
+        timestamp=last_timestamp)
+        latest_trade = Trade(symbol=self.symbol, price=latest_price, size=latest_size, timestamp=latest_timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        candle.update(latest_trade)
+        latest_vwap_numerator = last_trade.price * last_trade.size + latest_trade.price * latest_trade.size
+        latest_vwap_denominator = last_trade.size + latest_trade.size
+
+        self.assertEqual(candle.open, last_trade.price)
+        self.assertEqual(candle.close, latest_trade.price)
+        self.assertEqual(candle.low, last_trade.price)
+        self.assertEqual(candle.high, latest_trade.price)
+        self.assertEqual(candle.timestamp, last_trade.timestamp)
+        self.assertEqual(candle.trade_cnt, 2)
+        self.assertEqual(candle.volume, last_trade.size + latest_trade.size)
+        self.assertEqual(candle.vwap, latest_vwap_numerator/latest_vwap_denominator)
+        self.assertFalse(candle.finalised)
+
+
+    def test_failed_update_on_finalised_candle(self):
+        timestamp = datetime.now().replace(microsecond=0)
+        price, size = 50, 10
+        last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(microseconds=50))
+        candle.finalise()
+
+        with self.assertRaises(RuntimeError):
+            candle.update(latest_trade)
 
 
 
+    def test_failed_update_on_out_of_window_candle(self):
 
+        timestamp = datetime.now().replace(microsecond=0)
+        price, size = 50, 10
+        last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(seconds=2))
+
+        with self.assertRaises(RuntimeError):
+            candle.update(latest_trade)

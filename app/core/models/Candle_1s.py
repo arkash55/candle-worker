@@ -78,6 +78,19 @@ class Candle_1s():
 
         return (open_, high_, low_, close_)
         
+    @staticmethod
+    def _get_volume(trades):
+        return sum(t.size for t in trades)
+
+    @staticmethod
+    def _get_vwap(trades):
+        vwap_numerator = sum(t.price * t.size for t in trades)
+        vwap_denominator = sum(t.size for t in trades)
+        return vwap_numerator/vwap_denominator
+
+    @staticmethod
+    def _get_trade_cnt(trades):
+        return len(trades)
 
         
 
@@ -86,9 +99,9 @@ class Candle_1s():
     def from_trades(cls, symbol, trades):
         # we need to get open, close, high low
         open_, high_, low_, close_ = cls._get_ohlc(trades)
-        volume_ = sum(t.size for t in trades)
-        trade_cnt_ = len(trades)
-        vwap_ = sum(t.size * t.price for t in trades) / volume_
+        volume_ = cls._get_volume(trades)
+        trade_cnt_ = cls._get_trade_cnt(trades)
+        vwap_ = cls._get_vwap(trades)
         candle = cls(
                         symbol=symbol, open=open_, close=close_,
                         high=high_, low=low_, trade_cnt=trade_cnt_,
@@ -104,10 +117,18 @@ class Candle_1s():
 
 
     @classmethod
-    def start_new(cls, symbol, timestamp):
-        # first trade update will be open
-        pass
+    def start_new(cls, trade):
+        open_ = high_ = low_ = close_ = trade.price
+        volume_, trade_cnt_, vwap_ = trade.size, 1, trade.price
+        aligned_timestamp = trade.timestamp.replace(microsecond=0)
+        candle = cls(
+                        symbol=trade.symbol, open=open_, close=close_,
+                        high=high_, low=low_, trade_cnt=trade_cnt_,
+                        volume=volume_, vwap=vwap_, 
+                        timestamp=aligned_timestamp, finalised=False
+                    )
+        return candle
 
 
-    def update(self, trade):
-        pass 
+    # def update(self, trade):
+    #     pass 

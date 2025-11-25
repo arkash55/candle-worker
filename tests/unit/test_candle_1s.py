@@ -43,7 +43,7 @@ class Test_Candle_1s(unittest.TestCase):
         trades = self.generate_from_trades_data(open_=open_, high_=high_, close_=close_, low_=low_, size_=size_)
         candle = Candle_1s.from_trades(symbol=self.symbol, trades=trades)
         vwap_numerator = sum(t.price * t.size for t in trades)
-        volume = size_ * len(trades)
+        volume = sum(t.size for t in trades)
         self.assertEqual(candle.open, open_)
         self.assertEqual(candle.close, close_)
         self.assertEqual(candle.low, low_)
@@ -61,6 +61,21 @@ class Test_Candle_1s(unittest.TestCase):
         
 
 
+    def test_start_new(self):
+        # our worker should provide an aligned timestamp
+        timestamp = datetime.now()
+        price, size = 50, 10
+        trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=trade)
+        self.assertEqual(candle.open, price)
+        self.assertEqual(candle.close, price)
+        self.assertEqual(candle.low, price)
+        self.assertEqual(candle.high, price)
+        self.assertEqual(candle.timestamp, timestamp.replace(microsecond=0))
+        self.assertEqual(candle.trade_cnt, 1)
+        self.assertEqual(candle.volume, size)
+        self.assertEqual(candle.vwap, price)
+        self.assertFalse(candle.finalised)
 
 
 

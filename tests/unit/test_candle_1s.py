@@ -5,11 +5,6 @@ from app.core.models import Candle_1s, Trade
 
 
 class Test_Candle_1s(unittest.TestCase):
-    
-
-
-    # def test_upper(self):
-        # self.assertEqual('foo'.upper(), 'FOO')
 
 
     symbol = 'AAPL'

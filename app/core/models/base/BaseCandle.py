@@ -12,7 +12,7 @@ class BaseCandle(ABC):
     def  __init__(self, symbol, timestamp, finalised):
 
         if self._duration == None:
-            raise NotImplementedError(f"{self.__class__.__name__} must define a 'duration' attribute")
+            raise NotImplementedError(f"{self.__class__.__name__} must define a '_duration' attribute")
 
         self._symbol = symbol
         self._timestamp = timestamp

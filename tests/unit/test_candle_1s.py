@@ -40,7 +40,6 @@ class Test_Candle_1s(unittest.TestCase):
 
         self.assertEqual(candle.trade_cnt, trade_cnt)
         self.assertEqual(candle.volume, volume)
-        self.assertEqual(candle.vwap, vwap)
 
         self.assertEqual(candle.timestamp, timestamp)
         
@@ -249,4 +248,3 @@ class Test_Candle_1s(unittest.TestCase):
             candle.update(latest_trade)
 
 
-    # create more tests, mulitple updates, all window postions

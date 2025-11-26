@@ -1,79 +1,21 @@
 from datetime import timedelta
 
+from app.core.models.base import BaseCandle
 
-class Candle_1s():
+
+class Candle_1s(BaseCandle):
+
+    _duration: timedelta = timedelta(seconds=1)
+
+    def __init__(self, symbol, timestamp, finalised):
+        super().__init__(symbol=symbol, timestamp=timestamp, finalised=finalised)
+
 
     
 
-    def __init__(self, symbol, open, close, high, low, trade_cnt, volume, vwap, timestamp, finalised):
-        self.__symbol = symbol
-        self.__open = open
-        self.__close = close
-        self.__high = high
-        self.__low = low
-        self.__trade_cnt = trade_cnt
-        self.__volume = volume
-        self.__vwap = vwap
-        self.__timestamp = timestamp
-        self.__finalised = finalised
-        self.__vwap_numerator = vwap * volume
-
-
-    # PROPERTIES
-    @property
-    def symbol(self):
-        return self.__symbol
-
-    @property
-    def open(self):
-        return self.__open
-
-    @property
-    def close(self):
-        return self.__close
-    
-
-    @property
-    def high(self):
-        return self.__high
-
-    @property
-    def low(self):
-        return self.__low
-    
-
-    @property
-    def trade_cnt(self):
-        return self.__trade_cnt
-    
-
-    @property
-    def volume(self):
-        return self.__volume
-
-    @property
-    def vwap(self):
-        return self.__vwap
-    
-    
-    @property
-    def timestamp(self):
-        return self.__timestamp
-    
-    @property
-    def finalised(self):
-        return self.__finalised
-    
-    @property
-    def end_timestamp(self):
-        return self.__timestamp + timedelta(seconds=1)
-    
-
-    #STATIC METHODS
-
-
+    #STATIC METHODS MADE FOR FOR_TRADES FACTORY METHOD
     @staticmethod
-    def _get_ohlc(trades):
+    def _calc_ohlc(trades):
         if len(trades) == 0:
             raise ValueError("Cannot build candle from empty trade list")
         
@@ -85,17 +27,23 @@ class Candle_1s():
         return (open_, high_, low_, close_)
         
     @staticmethod
-    def _get_volume(trades):
+    def _calc_volume(trades):
         return sum(t.size for t in trades)
+    
+    @staticmethod
+    def _calc_vwap_numerator(trades):
+        return sum(t.price * t.size for t in trades)
+
+
 
     @staticmethod
-    def _get_vwap(trades):
-        vwap_numerator = sum(t.price * t.size for t in trades)
+    def _calc_vwap(trades):
+        vwap_numerator = Candle_1s._calc_vwap_numerator(trades=trades)
         vwap_denominator = sum(t.size for t in trades)
         return vwap_numerator/vwap_denominator
 
     @staticmethod
-    def _get_trade_cnt(trades):
+    def _calc_trade_cnt(trades):
         return len(trades)
 
         
@@ -106,32 +54,34 @@ class Candle_1s():
     # HUGE ASSUMPTION, ensure all trades are valid, they are of same symbol,and exist in the same candle window!!!! Care when creating this functionality upstream
 
     @classmethod
-    def from_trades(cls, symbol, trades):
-        open_, high_, low_, close_ = cls._get_ohlc(trades)
-        volume_ = cls._get_volume(trades)
-        trade_cnt_ = cls._get_trade_cnt(trades)
-        vwap_ = cls._get_vwap(trades)
+    def from_trades(cls, trades):
+        if len(trades) == 0:
+            raise ValueError('Cannot create candle with empty an empty trades list')
+
         candle = cls(
-                        symbol=symbol, open=open_, close=close_,
-                        high=high_, low=low_, trade_cnt=trade_cnt_,
-                        volume=volume_, vwap=vwap_, 
+                        symbol=trades[0].symbol, 
                         timestamp=trades[0].timestamp.replace(microsecond=0), finalised=True
                     )
+        candle._open, candle._high,  candle._low, candle._close = cls._calc_ohlc(trades)
+
+        candle._volume = cls._calc_volume(trades)
+        candle._vwap_numerator = cls._calc_vwap_numerator(trades)
+        candle._vwap = cls._calc_vwap(trades)
+        candle._trade_cnt = cls._calc_trade_cnt(trades)
+        
         return candle
 
 
 
     @classmethod
     def start_new(cls, trade):
-        open_ = high_ = low_ = close_ = trade.price
-        volume_, trade_cnt_, vwap_ = trade.size, 1, trade.price
         aligned_timestamp = trade.timestamp.replace(microsecond=0)
-        candle = cls(
-                        symbol=trade.symbol, open=open_, close=close_,
-                        high=high_, low=low_, trade_cnt=trade_cnt_,
-                        volume=volume_, vwap=vwap_, 
-                        timestamp=aligned_timestamp, finalised=False
-                    )
+        candle = cls(symbol=trade.symbol, timestamp=aligned_timestamp, finalised=False)
+        candle._open = candle._high = candle._low = candle._close = trade.price
+        candle._volume = trade.size
+        candle._vwap = trade.price
+        candle._vwap_numerator = trade.price * trade.size
+        candle._trade_cnt = 1
         return candle
 
 
@@ -143,13 +93,13 @@ class Candle_1s():
             raise RuntimeError('Trade timestamp exists outside candles time window')
 
 
-        self.__close = trade.price
-        self.__volume += trade.size
-        self.__high = max(self.__high, trade.price)
-        self.__low = min(self.__low, trade.price)
-        self.__vwap_numerator += trade.price * trade.size
-        self.__vwap = self.__vwap_numerator/self.__volume
-        self.__trade_cnt += 1
+        self._close = trade.price
+        self._volume += trade.size
+        self._high = max(self._high, trade.price)
+        self._low = min(self._low, trade.price)
+        self._vwap_numerator += trade.price * trade.size
+        self._vwap = self._vwap_numerator/self._volume
+        self._trade_cnt += 1
 
     def finalise(self):
-        self.__finalised = True
+        self._finalised = True

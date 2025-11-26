@@ -66,7 +66,7 @@ class Test_Candle_1s(unittest.TestCase):
     def test_valid_from_trades(self):
         open_, close_, low_, high_, size_ = 5, 10, 4, 12, 10
         trades = self.generate_from_trades_data(open_=open_, high_=high_, close_=close_, low_=low_, size_=size_)
-        candle = Candle_1s.from_trades(symbol=self.symbol, trades=trades)
+        candle = Candle_1s.from_trades(trades=trades)
         vwap_numerator = sum(t.price * t.size for t in trades)
         volume = sum(t.size for t in trades)
 
@@ -91,7 +91,7 @@ class Test_Candle_1s(unittest.TestCase):
 
     def test_empty_from_trades(self):
         with self.assertRaises(ValueError):
-            Candle_1s.from_trades(self.symbol, [])
+            Candle_1s.from_trades([])
         
 
 

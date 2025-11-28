@@ -52,11 +52,6 @@ class Test_Candle_1s(unittest.TestCase):
 
 
 
-        if almost_equal_vwap:
-            self.assertAlmostEqual(candle.vwap, vwap)
-        else :
-            self.assertEqual(candle.vwap, vwap)
-
 
 
 

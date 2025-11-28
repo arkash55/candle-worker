@@ -59,6 +59,10 @@ class Test_Candle_1s(unittest.TestCase):
         
 
     def test_valid_from_trades(self):
+        """
+            Ensures from_trades() returns a candle with correctly caluculates attributes 
+        """
+
         open_, close_, low_, high_, size_ = 5, 10, 4, 12, 10
         trades = self.generate_from_trades_data(open_=open_, high_=high_, close_=close_, low_=low_, size_=size_)
         candle = Candle_1s.from_trades(trades=trades)
@@ -85,13 +89,21 @@ class Test_Candle_1s(unittest.TestCase):
 
 
     def test_empty_from_trades(self):
+        """
+            Ensures from_trades() handles empty input list
+        """
+
         with self.assertRaises(ValueError):
             Candle_1s.from_trades([])
         
 
 
     def test_start_new(self):
-        # our worker should provide an aligned timestamp
+        """
+            Ensures we can create a new candle with correct attributes from a single trade            
+        """
+
+
         timestamp = datetime.now()
         price, size = 50, 10
         trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
@@ -116,6 +128,10 @@ class Test_Candle_1s(unittest.TestCase):
 
 
     def test_update(self):
+        """
+            Tests candle updates with a new trade correctly
+        """
+
         last_price, last_size, last_timestamp = 50, 10, datetime.now().replace(microsecond=0)
         latest_price, latest_size, latest_timestamp = 55, 20, last_timestamp+timedelta(milliseconds=20) 
         last_trade = Trade(symbol=self.symbol, price=last_price, size=last_size, 
@@ -147,6 +163,10 @@ class Test_Candle_1s(unittest.TestCase):
 
     # required for testing vwap (numerator -> vwap), volume, trade_cnt accumulation
     def test_multiple_updates(self):
+        """
+            Tests candle accumulates and updates with multiple new trades correctly
+        """
+
         aligned_timestamp = datetime.now().replace(microsecond=0)
         trade_cnt = 10
         prices = [random()*100 for _ in range(trade_cnt)]
@@ -194,6 +214,9 @@ class Test_Candle_1s(unittest.TestCase):
 
 
     def test_failed_update_on_finalised_candle(self):
+        """
+            Ensures candle cannot be updated if finalised
+        """
         timestamp = datetime.now().replace(microsecond=0)
         price, size = 50, 10
         last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
@@ -208,6 +231,10 @@ class Test_Candle_1s(unittest.TestCase):
 
     def test_failed_trade_before_candle_window(self):
 
+        """
+            Ensures candle cannot be updated with a trade before it's window
+        """
+
         timestamp = datetime.now().replace(microsecond=0)
         price, size = 50, 10
         last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
@@ -221,6 +248,10 @@ class Test_Candle_1s(unittest.TestCase):
 
     def test_failed_update_trade_after_candle_window(self):
 
+        """
+            Ensures candle cannot be updated with a trade after it's window
+        """
+
         timestamp = datetime.now().replace(microsecond=0)
         price, size = 50, 10
         last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
@@ -232,6 +263,10 @@ class Test_Candle_1s(unittest.TestCase):
 
 
     def test_failed_update_trade_on_candle_window_close(self):
+
+        """
+            Ensures candle cannot be updated with a trade on it's window close
+        """
 
         timestamp = datetime.now().replace(microsecond=0)
         price, size = 50, 10

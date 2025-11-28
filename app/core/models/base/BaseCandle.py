@@ -85,20 +85,26 @@ class BaseCandle(ABC):
     
 
 
+    # PUBLIC METHODS
+    def finalise(self):
+        self._finalised = True
+
 
     # ABSTRACT METHODS
     @classmethod
     @abstractmethod
-    def start_new(cls, source):
+    def from_past_data(cls, data):
+        pass
+
+
+    @classmethod
+    @abstractmethod
+    def start_new(cls, data):
         pass
 
 
 
     @abstractmethod
-    def update(self, source):
+    def update(self, data):
         pass
 
-
-    # PUBLIC METHODS
-    def finalise(self):
-        self._finalised = True

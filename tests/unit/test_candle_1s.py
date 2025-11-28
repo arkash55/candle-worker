@@ -9,7 +9,7 @@ class Test_Candle_1s(unittest.TestCase):
 
     symbol = 'AAPL'
 
-    def generate_from_trades_data(self, open_, high_, low_, close_, size_):
+    def generate_from_past_data(self, open_, high_, low_, close_, size_):
         trades = []
         curr_time = datetime.now().replace(microsecond=0)
         trades.append(Trade(
@@ -58,14 +58,14 @@ class Test_Candle_1s(unittest.TestCase):
 
         
 
-    def test_valid_from_trades(self):
+    def test_valid_from_past_data(self):
         """
-            Ensures from_trades() returns a candle with correctly caluculates attributes 
+            Ensures from_past_data() returns a candle with correctly caluculates attributes 
         """
 
         open_, close_, low_, high_, size_ = 5, 10, 4, 12, 10
-        trades = self.generate_from_trades_data(open_=open_, high_=high_, close_=close_, low_=low_, size_=size_)
-        candle = Candle_1s.from_trades(trades=trades)
+        trades = self.generate_from_past_data(open_=open_, high_=high_, close_=close_, low_=low_, size_=size_)
+        candle = Candle_1s.from_past_data(trades=trades)
         vwap_numerator = sum(t.price * t.size for t in trades)
         volume = sum(t.size for t in trades)
 
@@ -88,13 +88,13 @@ class Test_Candle_1s(unittest.TestCase):
 
 
 
-    def test_empty_from_trades(self):
+    def test_empty_from_past_data(self):
         """
-            Ensures from_trades() handles empty input list
+            Ensures from_past_data() handles empty input list
         """
 
         with self.assertRaises(ValueError):
-            Candle_1s.from_trades([])
+            Candle_1s.from_past_data([])
         
 
 

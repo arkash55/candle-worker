@@ -65,7 +65,7 @@ class Candle_1s(BaseCandle):
     # HUGE ASSUMPTION, ensure all trades are valid, they are of same symbol,and exist in the same candle window!!!! Care when creating this functionality upstream
 
     @classmethod
-    def from_trades(cls, trades):
+    def from_past_data(cls, trades):
         """
             Creates a 1 second candle from a list trades
 

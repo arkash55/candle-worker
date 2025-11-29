@@ -61,15 +61,12 @@ class Candle_1m(BaseCandle):
         derived_candle._vwap = candle.vwap
         derived_candle._vwap_numerator = candle.vwap_numerator
         derived_candle._trade_cnt = candle.trade_cnt
-        
+
         return derived_candle
 
 
 
 
-
-
-    @classmethod
     def update(cls, candle):
         pass
 

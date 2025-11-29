@@ -5,13 +5,11 @@ from abc import ABC
 from app.core.models.base import BaseCandle
 
 
-class DerivedCandle(BaseCandle, ABC):
+class Derived_Candle(BaseCandle, ABC):
     
 
 
 
-    def __init__(self, symbol, timestamp, finalised):
-        super().__init__(symbol, timestamp, finalised)
 
     
     @classmethod

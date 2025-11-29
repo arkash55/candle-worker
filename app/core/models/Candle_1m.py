@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from app.core.models.base import BaseCandle, DerivedCandle
-# from app.core.models.base.Derived_Candle import DerivedCandle
+from app.core.models.base import BaseCandle, Derived_Candle
 
 
 
 
 
-class Candle_1m(DerivedCandle): 
+
+class Candle_1m(Derived_Candle): 
 
 
     _duration: timedelta = timedelta(minutes=1)

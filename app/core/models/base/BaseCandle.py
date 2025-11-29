@@ -65,6 +65,11 @@ class BaseCandle(ABC):
     def vwap(self):
         return self._vwap
     
+
+    @property
+    def vwap_numerator(self):
+        return self._vwap_numerator
+    
     
     @property
     def timestamp(self):

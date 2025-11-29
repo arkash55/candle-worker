@@ -63,7 +63,7 @@ def generate_multiple_1s_candle_with_1_trade_and_volume(symbol, price, count):
         candles.append(
             create_single_1s_candle_with_1_trade_and_volume(
                 symbol,
-                aligned_timestamp + timedelta(seconds=i),
+                aligned_timestamp + timedelta(seconds=i%60),
                 price + i
             )
         )

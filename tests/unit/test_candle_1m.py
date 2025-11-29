@@ -2,7 +2,7 @@ import unittest
 from random import randint, random
 from datetime import datetime, timedelta
 from app.core.models import Candle_1m, Candle_1s, Trade
-from tests.utils.candle_factory import generate_multiple_1s_candle_with_1_trade_and_volume, sum_between
+from tests.utils.candle_factory import create_single_1s_candle_with_1_trade_and_volume, generate_multiple_1s_candle_with_1_trade_and_volume, sum_between
 
 
 class Test_Candle_1m(unittest.TestCase):
@@ -93,30 +93,49 @@ class Test_Candle_1m(unittest.TestCase):
 
 
 
-    # def test_start_new(self):
-    #     """
-    #         Ensures we can create a new candle with correct attributes from a single trade            
-    #     """
+    def test_start_new(self):
+        """
+            Ensures we can create a new candle with correct attributes from a single 1 minute candle       
+        """ 
+
+        baseline_timestamp = datetime.now().replace(microsecond=0)
+        price = 100
+        candle_1s = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp,
+            price
+        )
+
+        derived_candle = Candle_1m.start_new(candle=candle_1s)
 
 
-    #     timestamp = datetime.now()
-    #     price, size = 50, 10
-    #     trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
-    #     candle = Candle_1s.start_new(trade=trade)
+        pred_symbol = self.symbol
+        pred_open = price
+        pred_high = price
+        pred_low = price
+        pred_close = price
 
-    #     self.assert_candle_equal(
-    #         candle=candle,
-    #         open=price,
-    #         high=price, 
-    #         low=price,
-    #         close=price,
-    #         trade_cnt=1,
-    #         volume=size,
-    #         vwap=price,
-    #         timestamp=timestamp.replace(microsecond=0),
-    #         is_finalised=False,
-    #         almost_equal_vwap=False
-    #     )
+        pred_vwap_numerator = price
+        pred_volume = 1
+        pred_trade_cnt = 1;
+        pred_vwap = pred_vwap_numerator / pred_volume
+        pred_timestamp = baseline_timestamp.replace(second=0)
+
+        self.assert_candle_equal(
+            candle=derived_candle,
+            symbol=pred_symbol,
+            open=pred_open,
+            high=pred_high, 
+            low=pred_low,
+            close=pred_close,
+            trade_cnt=pred_trade_cnt,
+            volume=pred_volume,
+            vwap=pred_vwap,
+            timestamp=pred_timestamp,
+            is_finalised=False,
+            almost_equal_vwap=False
+        )
+ 
 
 
   

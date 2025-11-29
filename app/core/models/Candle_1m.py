@@ -45,7 +45,28 @@ class Candle_1m(BaseCandle):
 
     @classmethod
     def start_new(cls, candle):
-        pass
+        derived_candle = cls(
+            symbol=candle.symbol, 
+            timestamp=candle.timestamp.replace(second=0),
+            finalised=False
+        )
+
+
+        derived_candle._open = candle.open
+        derived_candle._high = candle.high
+        derived_candle._low = candle.low
+        derived_candle._close = candle.close
+
+        derived_candle._volume = candle.volume
+        derived_candle._vwap = candle.vwap
+        derived_candle._vwap_numerator = candle.vwap_numerator
+        derived_candle._trade_cnt = candle.trade_cnt
+        
+        return derived_candle
+
+
+
+
 
 
     @classmethod

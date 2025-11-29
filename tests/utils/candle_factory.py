@@ -9,7 +9,7 @@ def create_single_1s_candle_with_1_trade_and_volume(symbol, timestamp, price):
     candle = Candle_1s.__new__(Candle_1s)
 
     candle._symbol = symbol
-    candle._timestamp = timestamp
+    candle._timestamp = timestamp.replace(microsecond=0)
     candle._finalised = False
 
     candle._open = price

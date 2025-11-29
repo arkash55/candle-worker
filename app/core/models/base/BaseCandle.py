@@ -84,10 +84,48 @@ class BaseCandle(ABC):
         return self.timestamp + self._duration
     
 
+    #STATIC METHODS
+    def get_data_from_aggregated_candles(candles):
+        sorted_candles = sorted(candles, key=lambda t: t.timestamp)
+        
+        symbol_ = sorted_candles[0].symbol
+        
+        open_ = sorted_candles[0].open
+        high_ = max(c.high for c in candles)
+        low_ = min(c.low for c in candles)
+        close_ = sorted_candles[-1].close
+
+        trade_cnt_ = sum(c.trade_cnt for c in candles)
+        volume_ = sum(c.volume for c in candles)
+        vwap_numerator_ = sum(c.vwap for c in candles)
+        vwap_ = vwap_numerator_ / volume_
+
+
+        return {
+            'symbol': symbol_,
+            'open': open_,
+            'high': high_,
+            'low': low_,
+            'close': close_, 
+            'trade_cnt': trade_cnt_,
+            'volume': volume_,
+            'vwap_numerator': vwap_numerator_,
+            'vwap': vwap_,
+        }
+
+
+
 
     # PUBLIC METHODS
     def finalise(self):
         self._finalised = True
+
+
+    # INSTANCE METHODS
+
+    def _apply_attr(self, derived_data):
+        for key, val in derived_data.items():
+            setattr(self, f'_{key}', val)
 
 
     # ABSTRACT METHODS

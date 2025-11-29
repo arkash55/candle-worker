@@ -45,6 +45,16 @@ class Candle_1m(BaseCandle):
 
     @classmethod
     def start_new(cls, candle):
+        """
+            Creates a 1 minute candle from a single trade
+
+            Assumptions:
+                - Input candle is valid and complete
+
+            Returns:
+                - A fully populated, time aligned, but not finalised 1 minute candle
+        """
+
         derived_candle = cls(
             symbol=candle.symbol, 
             timestamp=candle.timestamp.replace(second=0),
@@ -67,8 +77,41 @@ class Candle_1m(BaseCandle):
 
 
 
-    def update(cls, candle):
-        pass
+    def update(self, candle):
+        """
+            Updates the current candle using smaller candles
+
+            Assumptions: 
+                - The new candle parameter is a candle that exists after the previous
+                    smaller candle. (1m candles are updated in order)
+                - Candle_1s exists in the correct time window as our current        
+                - Candle_1s is finalised
+
+
+            Raises:
+                - Runtime Error: 
+                    if the input candle is not finalised
+                    if the updated candle is finalised
+                    if the input candle does not match window of the current candle
+                    
+        """
+
+        if self.finalised:
+            raise RuntimeError('Cannot update a finalised candle')
+        elif not candle.finalised:
+              raise RuntimeError('Cannot update a derived candle with an unfinalised candle')
+        if not self.timestamp <= candle.timestamp < self.end_timestamp:
+            raise RuntimeError('Trade timestamp exists outside candles time window')
+
+
+        self._high = max(self.high, candle.high)
+        self._low = min(self.low, candle.low)
+        self._close = candle.close
+
+        self._volume += candle.volume
+        self._trade_cnt += candle.trade_cnt
+        self._vwap_numerator += candle.vwap_numerator
+        self._vwap = self.vwap_numerator / self.volume
 
 
 

@@ -138,38 +138,179 @@ class Test_Candle_1m(unittest.TestCase):
  
 
 
+
+
+    def test_failed_update_on_finalised_candle(self):
+        """
+            Ensures candle cannot be updated if finalised
+        """
+        timestamp = datetime.now().replace(microsecond=0)
+        price, size = 50, 10
+        last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
+        candle = Candle_1s.start_new(trade=last_trade)
+        latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(microseconds=50))
+        candle.finalise()
+
+        with self.assertRaises(RuntimeError):
+            candle.update(latest_trade)
+
+
+
+
+
+
+    def test_failed_trade_before_candle_window(self):
+
+        """
+        Ensures candle cannot be updated with a trade before it's window
+        """
+
+        baseline_timestamp = datetime.now().replace(microsecond=0)
+        price_1, price_2 = 100, 110
+        first_candle_1s_a = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp,
+            price_1
+        )
+
+
+        derived_candle = Candle_1m.start_new(candle=first_candle_1s_a)
+
+        new_candle_1s = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            derived_candle.timestamp - timedelta(minutes=2),
+            price_2
+        )
+
+
+
+        with self.assertRaises(RuntimeError):
+              derived_candle.update(new_candle_1s)
+
+
+
+
+
+
+
+    def test_failed_update_trade_after_candle_window(self):
+
+        """
+            Ensures candle cannot be updated with a trade after it's window
+        """
+
+
+        baseline_timestamp = datetime.now().replace(microsecond=0)
+        price_1, price_2 = 100, 110
+        first_candle_1s_a = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp,
+            price_1
+        )
+
+        derived_candle = Candle_1m.start_new(candle=first_candle_1s_a)
+
+        new_candle_1s = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            derived_candle.timestamp + timedelta(minutes=2),
+            price_2
+        )
+
+
+
+        with self.assertRaises(RuntimeError):
+              derived_candle.update(new_candle_1s)
+
+
+
+
+
+
+    def test_failed_update_trade_on_candle_window_close(self):
+
+        """
+            Ensures candle cannot be updated with a trade on it's window close
+        """
+
+        baseline_timestamp = datetime.now().replace(microsecond=0)
+        price_1, price_2 = 100, 110
+        first_candle_1s_a = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp,
+            price_1
+        )
+
+        derived_candle = Candle_1m.start_new(candle=first_candle_1s_a)
+
+
+        new_candle_1s = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            derived_candle.timestamp + timedelta(minutes=1),
+            price_2
+        )
+
+
+        with self.assertRaises(RuntimeError):
+              derived_candle.update(new_candle_1s)
+
+
+
+
+
   
 
 
-    # def test_update(self):
-    #     """
-    #         Tests candle updates with a new trade correctly
-    #     """
+    def test_update(self):
+        """
+            Tests candle updates with a new candle correctly
+        """
 
-    #     last_price, last_size, last_timestamp = 50, 10, datetime.now().replace(microsecond=0)
-    #     latest_price, latest_size, latest_timestamp = 55, 20, last_timestamp+timedelta(milliseconds=20) 
-    #     last_trade = Trade(symbol=self.symbol, price=last_price, size=last_size, 
-    #     timestamp=last_timestamp)
-    #     latest_trade = Trade(symbol=self.symbol, price=latest_price, size=latest_size, timestamp=latest_timestamp)
-    #     candle = Candle_1s.start_new(trade=last_trade)
-    #     candle.update(latest_trade)
-    #     latest_vwap_numerator = last_trade.price * last_trade.size + latest_trade.price * latest_trade.size
-    #     latest_vwap_denominator = last_trade.size + latest_trade.size
+        baseline_timestamp = datetime.now().replace(microsecond=0)
+        price_1, price_2 = 100, 110
+        first_candle_1s_a = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp,
+            price_1
+        )
 
 
-    #     self.assert_candle_equal(
-    #         candle=candle,
-    #         open=last_trade.price,
-    #         high=latest_trade.price, 
-    #         low=last_trade.price,
-    #         close=latest_trade.price,
-    #         trade_cnt=2,
-    #         volume=last_trade.size + latest_trade.size,
-    #         vwap=latest_vwap_numerator/latest_vwap_denominator,
-    #         timestamp=last_trade.timestamp,
-    #         is_finalised=False,
-    #         almost_equal_vwap=False
-    #     )
+        new_candle_1s = create_single_1s_candle_with_1_trade_and_volume(
+            self.symbol, 
+            baseline_timestamp+timedelta(microseconds=20),
+            price_2
+        )
+
+        derived_candle = Candle_1m.start_new(candle=first_candle_1s_a)
+        derived_candle.update(new_candle_1s)
+
+        pred_symbol = self.symbol
+        pred_open = price_1
+        pred_high = price_2
+        pred_low = price_1
+        pred_close = price_2
+
+        pred_vwap_numerator = price_1 + price_2
+        pred_volume = 2
+        pred_trade_cnt = 2;
+        pred_vwap = pred_vwap_numerator / pred_volume
+        pred_timestamp = baseline_timestamp.replace(second=0)
+
+        self.assert_candle_equal(
+            candle=derived_candle,
+            symbol=pred_symbol,
+            open=pred_open,
+            high=pred_high, 
+            low=pred_low,
+            close=pred_close,
+            trade_cnt=pred_trade_cnt,
+            volume=pred_volume,
+            vwap=pred_vwap,
+            timestamp=pred_timestamp,
+            is_finalised=False,
+            almost_equal_vwap=False
+        )
+
+        
 
         
 
@@ -223,72 +364,4 @@ class Test_Candle_1m(unittest.TestCase):
     #     )
 
         
-
-
-
-
-    # def test_failed_update_on_finalised_candle(self):
-    #     """
-    #         Ensures candle cannot be updated if finalised
-    #     """
-    #     timestamp = datetime.now().replace(microsecond=0)
-    #     price, size = 50, 10
-    #     last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
-    #     candle = Candle_1s.start_new(trade=last_trade)
-    #     latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(microseconds=50))
-    #     candle.finalise()
-
-    #     with self.assertRaises(RuntimeError):
-    #         candle.update(latest_trade)
-
-
-
-    # def test_failed_trade_before_candle_window(self):
-
-    #     """
-    #         Ensures candle cannot be updated with a trade before it's window
-    #     """
-
-    #     timestamp = datetime.now().replace(microsecond=0)
-    #     price, size = 50, 10
-    #     last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
-    #     candle = Candle_1s.start_new(trade=last_trade)
-    #     latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp-timedelta(seconds=2))
-
-    #     with self.assertRaises(RuntimeError):
-    #         candle.update(latest_trade)
-
-
-
-    # def test_failed_update_trade_after_candle_window(self):
-
-    #     """
-    #         Ensures candle cannot be updated with a trade after it's window
-    #     """
-
-    #     timestamp = datetime.now().replace(microsecond=0)
-    #     price, size = 50, 10
-    #     last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
-    #     candle = Candle_1s.start_new(trade=last_trade)
-    #     latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(seconds=2))
-
-    #     with self.assertRaises(RuntimeError):
-    #         candle.update(latest_trade)
-
-
-    # def test_failed_update_trade_on_candle_window_close(self):
-
-    #     """
-    #         Ensures candle cannot be updated with a trade on it's window close
-    #     """
-
-    #     timestamp = datetime.now().replace(microsecond=0)
-    #     price, size = 50, 10
-    #     last_trade = Trade(symbol=self.symbol, price=price, size=size, timestamp= timestamp)
-    #     candle = Candle_1s.start_new(trade=last_trade)
-    #     latest_trade = Trade(symbol=self.symbol, price=price+1, size=size+5, timestamp= timestamp+timedelta(seconds=1))
-
-    #     with self.assertRaises(RuntimeError):
-    #         candle.update(latest_trade)
-
 

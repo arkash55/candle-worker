@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from app.core.models.base import BaseCandle
 
@@ -62,8 +62,13 @@ class Candle_1s(BaseCandle):
     # METHODS
 
 
-    # HUGE ASSUMPTION, ensure all trades are valid, they are of same symbol,and exist in the same candle window!!!! Care when creating this functionality upstream
+    @classmethod
+    def _aligned_timestamp(cls, timestamp=datetime.now()):
+        return timestamp.replace(microsecond=0)
 
+
+    # HUGE ASSUMPTION, ensure all trades are valid, they are of same symbol,and exist in the same candle window!!!! Care when creating this functionality upstream
+    
     @classmethod
     def from_past_data(cls, trades):
         """
@@ -82,9 +87,10 @@ class Candle_1s(BaseCandle):
         if len(trades) == 0:
             raise ValueError('Cannot create candle with empty an empty trades list')
 
+        aligned_timestamp = cls._aligned_timestamp(trades[0].timestamp)
         candle = cls(
                         symbol=trades[0].symbol, 
-                        timestamp=trades[0].timestamp.replace(microsecond=0), finalised=True
+                        timestamp=aligned_timestamp, finalised=True
                     )
         candle._open, candle._high,  candle._low, candle._close = cls._calc_ohlc(trades)
 
@@ -109,7 +115,7 @@ class Candle_1s(BaseCandle):
                 - A fully populated, time aligned, but not finalised 1 second candle
         """
 
-        aligned_timestamp = trade.timestamp.replace(microsecond=0)
+        aligned_timestamp = cls._aligned_timestamp(trade.timestamp)
         candle = cls(symbol=trade.symbol, timestamp=aligned_timestamp, finalised=False)
         candle._open = candle._high = candle._low = candle._close = trade.price
         candle._volume = trade.size

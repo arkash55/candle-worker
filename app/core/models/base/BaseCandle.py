@@ -134,6 +134,18 @@ class BaseCandle(ABC):
 
 
     # ABSTRACT METHODS
+
+    @classmethod
+    @abstractmethod
+    def _aligned_timestamp(cls, timestamp=None):
+        """
+        Creates aligned timestamp for the given timestamp
+        Returns:
+            datetime
+        """
+        pass
+
+
     @classmethod
     @abstractmethod
     def from_past_data(cls, data):
